@@ -1,5 +1,5 @@
 # Sets the initial parameters birth cohort (number of individuals at time 0) and 
-# periods of time (4 periods: 0-<4 months, 4-<12 months, 12-<24 months, 24-<60 months)
+# periods of time (4 periods: 0-<4 months, 4-<12 months, 12-<24 months, 24-<60 months )
 birth_cohort <- 112680
 periods <- 4
 
