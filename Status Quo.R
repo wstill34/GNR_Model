@@ -21,6 +21,14 @@ other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 total_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 survived_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 
+# rbinom(n, size, prob)
+# n = number of observations (should be cohort number)
+# size = number of trials (if doing 1000 simulations, 1 trial per simulation)
+# prob = probability of hospitalization
+# h_sample2 <- rbinom(remaining_cohort, 1000, h[age])
+# mu1_sample2 <- rbinom(remaining_cohort, 1000, mu1[age])
+# mu2_sample2 <- rbinom(remaining_cohort, 1000, mu2[age])
+
 # Monte Carlo simulation
 for (sim in 1:n_simulations) {
   remaining_cohort <- birth_cohort
@@ -32,6 +40,11 @@ for (sim in 1:n_simulations) {
     h_sample <- rnorm(1, mean=h[age], sd=h_se[age])
     mu1_sample <- rnorm(1, mean=mu1[age], sd=mu1_se[age])
     mu2_sample <- rnorm(1, mean=mu2[age], sd=mu2_se[age])
+    
+    #see below for updated using rbinom
+    #h_sample <- rbinom(birth_cohort, 1, h[age])
+    #mu1_sample <- rbinom(remaining_cohort, 1, mu1[age])
+    #mu2_sample <- rbinom(remaining_cohort, 1, mu2[age])
     
     # Ensures that probabilities remain between 0 and 1
     h_sample <- max(min(h_sample, 1), 0)
