@@ -5,11 +5,8 @@ periods <- 4
 
 # Sets age-specific parameters for each period
 h <- c(0.0002003, 0.0000448, 0.0000279, 0.0000491)  # Probability of hospitalization due to GNR infections
-h_se <- c(0.00004476, 0.00002117, 0.00001669, 0.00002216)  # Standard error for h
-mu1 <- c(0.0348, 0.0348, 0.004725, 0.02835) # All-cause mortality probability
-mu1_se <- c(0.00348, 0.00348, 0.0004725, 0.002835) # Standard error for mu1, for now just 10% of all-cause mortality probability, discuss with Meagan
-mu2 <- c(0.5658, 0.3529, 0.5714, 0.3529)    # Probability of death given hospitalization due to GNR infection
-mu2_se <- c(0.05658, 0.03529, 0.05714, 0.03529)    # Standard error for mu2, for now just 10% of GNR mortality probability, discuss with Meagan
+mu_ac <- c(0.0348, 0.0348, 0.004725, 0.02835) # All-cause mortality probability
+mu_gnr <- c(0.5658, 0.3529, 0.5714, 0.3529)    # Probability of death given hospitalization due to GNR infection
 
 # Defines number of simulations for Monte Carlo model
 n_simulations <- 1000
@@ -21,14 +18,6 @@ other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 total_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 survived_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 
-# rbinom(n, size, prob)
-# n = number of observations (should be cohort number)
-# size = number of trials (if doing 1000 simulations, 1 trial per simulation)
-# prob = probability of hospitalization
-# h_sample2 <- rbinom(remaining_cohort, 1000, h[age])
-# mu1_sample2 <- rbinom(remaining_cohort, 1000, mu1[age])
-# mu2_sample2 <- rbinom(remaining_cohort, 1000, mu2[age])
-
 # Monte Carlo simulation
 for (sim in 1:n_simulations) {
   remaining_cohort <- birth_cohort
@@ -36,30 +25,14 @@ for (sim in 1:n_simulations) {
   #10/2/2024 - move this age in 1:periods part out of the loop,  take h_sample out of loop, 
   # h_sample [sim]
   for (age in 1:periods) {
-    # Samples parameters and adds uncertainty
-    h_sample <- rnorm(1, mean=h[age], sd=h_se[age])
-    mu1_sample <- rnorm(1, mean=mu1[age], sd=mu1_se[age])
-    mu2_sample <- rnorm(1, mean=mu2[age], sd=mu2_se[age])
-    
-    #see below for updated using rbinom
-    #h_sample <- rbinom(birth_cohort, 1, h[age])
-    #mu1_sample <- rbinom(remaining_cohort, 1, mu1[age])
-    #mu2_sample <- rbinom(remaining_cohort, 1, mu2[age])
-    
-    # Ensures that probabilities remain between 0 and 1
-    h_sample <- max(min(h_sample, 1), 0)
-    mu1_sample <- max(min(mu1_sample, 1), 0)
-    mu2_sample <- max(min(mu2_sample, 1), 0)
-    
-    # Calculates hospitalizations and deaths for the current age group
-    hospitalizations_sim[sim, age] <- remaining_cohort * h_sample
-    deaths_due_to_gnr_sim[sim, age] <- hospitalizations_sim[sim, age] * mu2_sample
-    other_cause_deaths_sim[sim, age] <- remaining_cohort * mu1_sample - deaths_due_to_gnr_sim[sim, age]
-    total_deaths_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] + other_cause_deaths_sim[sim, age]
-    #QUESTION FOR MEAGAN: do I need to subtract deaths due to gnr from all-cause deaths? think yes but double check
-    # Calculates the number of survivors
-    survived_sim[sim, age] <- remaining_cohort - total_deaths_sim[sim, age]
-    
+   # Calculates number of hospitalizations, deaths due to GNR, and other cause deaths
+    hospitalizations_sim[sim, age] <- rbinom(1, remaining_cohort, h[age])
+    deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_sim[sim, age], mu_gnr[age])
+    other_cause_deaths_sim[sim, age] <- rbinom(1, remaining_cohort, mu_ac[age]) - deaths_due_to_gnr_sim[sim, age]
+     
+   # Calculates the number of survivors
+    survived_sim[sim, age] <- remaining_cohort - deaths_due_to_gnr_sim[sim, age] - other_cause_deaths_sim[sim, age]
+   
     # Update the remaining cohort for the next period
     remaining_cohort <- survived_sim[sim, age]
   }
@@ -100,5 +73,5 @@ cat("95% CI for survivors:", ci(survived_sim[, periods]), "\n\n")
 cat("\nResults by period (mean values):\n")
 cat("Period\tHospitalizations\tGNR Deaths\tOther-cause Deaths\tTotal Deaths\tSurvivors\n")
 for (age in 1:periods) {
-  cat(age, "\t", mean(hospitalizations_sim[, age]), "\t\t", mean(deaths_due_to_gnr_sim[, age]), "\t\t", mean(other_cause_deaths_sim[, age]), "\t\t", mean(total_deaths_sim[, age]), "\t\t", mean(survived_sim[, age]), "\n")
+  cat(age, "\t", mean(hospitalizations_sim[, age]), "\t", mean(deaths_due_to_gnr_sim[, age]), "\t\t", mean(other_cause_deaths_sim[, age]), "\t\t", mean(total_deaths_sim[, age]), "\t\t", mean(survived_sim[, age]), "\n")
 }
