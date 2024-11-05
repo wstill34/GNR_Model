@@ -5,6 +5,7 @@ periods <- 4
 
 # Sets age-specific parameters for each period
 h <- c(0.0002003, 0.0000448, 0.0000279, 0.0000491)  # Probability of hospitalization due to GNR infections
+h_se <- c(0.00004476, 0.00002117, 0.00001669, 0.00002216)  # Standard error for h
 mu_ac <- c(0.0348, 0.0348, 0.004725, 0.02835) # All-cause mortality probability
 mu_gnr <- c(0.5658, 0.3529, 0.5714, 0.3529)    # Probability of death given hospitalization due to GNR infection
 
@@ -13,6 +14,8 @@ n_simulations <- 1000
 
 # Creates matrices to store the results from simulations
 hospitalizations_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+#Added h_vec_sim matrix of 1000 rows, 4 columns
+h_vec_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 total_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
@@ -21,17 +24,18 @@ survived_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 # Monte Carlo simulation
 for (sim in 1:n_simulations) {
   remaining_cohort <- birth_cohort
-  
-  #10/2/2024 - move this age in 1:periods part out of the loop,  take h_sample out of loop, 
-  # h_sample [sim]
+ 
   for (age in 1:periods) {
    # Calculates number of hospitalizations, deaths due to GNR, and other cause deaths
-    hospitalizations_sim[sim, age] <- rbinom(1, remaining_cohort, h[age])
+    h_vec_sim[sim, age] <- rnorm(1, mean = h[age], sd = h_se[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
+    hospitalizations_sim[sim, age] <- rbinom(1, remaining_cohort, h_vec_sim[age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
     deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_sim[sim, age], mu_gnr[age])
+    #QUESTION FOR MEAGAN - do we need to create a normal distribution for deaths as well, followed by binomial, or just binomial here sufficient?
     other_cause_deaths_sim[sim, age] <- rbinom(1, remaining_cohort, mu_ac[age]) - deaths_due_to_gnr_sim[sim, age]
      
    # Calculates the number of survivors
     survived_sim[sim, age] <- remaining_cohort - deaths_due_to_gnr_sim[sim, age] - other_cause_deaths_sim[sim, age]
+    total_deaths_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] + other_cause_deaths_sim[sim, age]
    
     # Update the remaining cohort for the next period
     remaining_cohort <- survived_sim[sim, age]
@@ -47,6 +51,7 @@ total_all_cause_deaths_sim <- rowSums(total_deaths_sim)
 
 # Establishes the confidence interval function
 ci <- function(x) quantile(x, probs=c(0.025, 0.975))
+
 
 total_hospitalizations_ci <- ci(total_hospitalizations_sim)
 total_deaths_due_to_gnr_ci <- ci(total_deaths_due_to_gnr_sim)
@@ -71,7 +76,7 @@ cat("95% CI for survivors:", ci(survived_sim[, periods]), "\n\n")
 
 # Displays results by age group
 cat("\nResults by period (mean values):\n")
-cat("Period\tHospitalizations\tGNR Deaths\tOther-cause Deaths\tTotal Deaths\tSurvivors\n")
+cat("Period\tHospitalizations\tGNR Deaths\tOther-cause Deaths\tSurvivors\n")
 for (age in 1:periods) {
-  cat(age, "\t", mean(hospitalizations_sim[, age]), "\t", mean(deaths_due_to_gnr_sim[, age]), "\t\t", mean(other_cause_deaths_sim[, age]), "\t\t", mean(total_deaths_sim[, age]), "\t\t", mean(survived_sim[, age]), "\n")
+  cat(age, "\t", round(mean(hospitalizations_sim[, age])), "\t", round(mean(deaths_due_to_gnr_sim[, age])), "\t", round(mean(other_cause_deaths_sim[, age])), "\t", round(mean(survived_sim[, age])), "\n")
 }
