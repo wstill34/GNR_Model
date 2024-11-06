@@ -4,10 +4,12 @@ birth_cohort <- 112680
 periods <- 4
 
 # Sets age-specific parameters for each period
-h <- c(0.0002003, 0.0000448, 0.0000279, 0.0000491)  # Probability of hospitalization due to GNR infections
-h_se <- c(0.00004476, 0.00002117, 0.00001669, 0.00002216)  # Standard error for h
+h <- c(71/126449, 20/252898, 12/502662, 21/1038045)  # Probability of hospitalization due to GNR infections
+h_se <- c(0.0000432584, 0.0000229607, 0.0000154507, 0.0000246348)  # Standard error for h
 mu_ac <- c(0.0348, 0.0348, 0.004725, 0.02835) # All-cause mortality probability
-mu_gnr <- c(0.5658, 0.3529, 0.5714, 0.3529)    # Probability of death given hospitalization due to GNR infection
+mu_gnr <- c(41/71, 7/19, 7/12, 8/19)    # Probability of death given hospitalization due to GNR infection
+mu_gnr_se <- c(0.13874, 0.175219, 0.341565, 0.195646)    # Standard error for mu2, for now just 10% of GNR mortality probability, discuss with Meagan
+length <- c("0 - <4 months ", "4 - <12 months", "12 - <24 months", "24 - 59 months")
 
 # Defines number of simulations for Monte Carlo model
 n_simulations <- 1000
@@ -16,6 +18,7 @@ n_simulations <- 1000
 hospitalizations_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 #Added h_vec_sim matrix of 1000 rows, 4 columns
 h_vec_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+mu_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 total_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
@@ -28,8 +31,10 @@ for (sim in 1:n_simulations) {
   for (age in 1:periods) {
    # Calculates number of hospitalizations, deaths due to GNR, and other cause deaths
     h_vec_sim[sim, age] <- rnorm(1, mean = h[age], sd = h_se[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
+    #QUESTION FOR MEAGAN - what about negative h_vec_sim values? do we need to add a lower limit of 0? No right, because the binomial distribution starts at 0 so can't have negative hospitalizations
     hospitalizations_sim[sim, age] <- rbinom(1, remaining_cohort, h_vec_sim[age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
-    deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_sim[sim, age], mu_gnr[age])
+    mu_gnr_sim[sim, age] <- rnorm(1, mean= mu_gnr[age], sd = mu_gnr_se[age])
+    deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_sim[sim, age], mu_gnr_sim[age])
     #QUESTION FOR MEAGAN - do we need to create a normal distribution for deaths as well, followed by binomial, or just binomial here sufficient?
     other_cause_deaths_sim[sim, age] <- rbinom(1, remaining_cohort, mu_ac[age]) - deaths_due_to_gnr_sim[sim, age]
      
@@ -76,7 +81,8 @@ cat("95% CI for survivors:", ci(survived_sim[, periods]), "\n\n")
 
 # Displays results by age group
 cat("\nResults by period (mean values):\n")
-cat("Period\tHospitalizations\tGNR Deaths\tOther-cause Deaths\tSurvivors\n")
+cat("Period\tDuration\tHospitalizations\tGNR Deaths\tOther-cause Deaths\tSurvivors\n")
 for (age in 1:periods) {
-  cat(age, "\t", round(mean(hospitalizations_sim[, age])), "\t", round(mean(deaths_due_to_gnr_sim[, age])), "\t", round(mean(other_cause_deaths_sim[, age])), "\t", round(mean(survived_sim[, age])), "\n")
+  cat(age, "\t", length[age], "\t", round(mean(hospitalizations_sim[, age])), "\t", round(mean(deaths_due_to_gnr_sim[, age])), "\t", round(mean(other_cause_deaths_sim[, age])), "\t", round(mean(survived_sim[, age])), "\n")
 }
+#QUESTION FOR MEAGAN, results are more hospitalizations than I would expect, discuss reasons why/if this is a probable error?
