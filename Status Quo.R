@@ -18,6 +18,7 @@ n_simulations <- 1000
 hospitalizations_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 #Added h_vec_sim matrix of 1000 rows, 4 columns
 h_vec_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+#Also added mu_gnr_sim matrix of 1000 rows, 4 columns
 mu_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
@@ -33,9 +34,9 @@ for (sim in 1:n_simulations) {
     h_vec_sim[sim, age] <- rnorm(1, mean = h[age], sd = h_se[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
     #QUESTION FOR MEAGAN - what about negative h_vec_sim values? do we need to add a lower limit of 0? No right, because the binomial distribution starts at 0 so can't have negative hospitalizations
     hospitalizations_sim[sim, age] <- rbinom(1, remaining_cohort, h_vec_sim[age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
+    #QUESTION FOR MEAGAN - do we need to create a normal distribution for deaths as well, followed by binomial, or just binomial here sufficient? Believe we do so I incorporated that here!
     mu_gnr_sim[sim, age] <- rnorm(1, mean= mu_gnr[age], sd = mu_gnr_se[age])
     deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_sim[sim, age], mu_gnr_sim[age])
-    #QUESTION FOR MEAGAN - do we need to create a normal distribution for deaths as well, followed by binomial, or just binomial here sufficient?
     other_cause_deaths_sim[sim, age] <- rbinom(1, remaining_cohort, mu_ac[age]) - deaths_due_to_gnr_sim[sim, age]
      
    # Calculates the number of survivors
