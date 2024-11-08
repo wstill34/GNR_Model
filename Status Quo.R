@@ -3,12 +3,16 @@
 birth_cohort <- 112680
 periods <- 4
 
+h_vec <- c(71, 20, 12, 21) # GNR hospitalized patients by age group
+h_n <- c(126449, 252898, 502662, 1038045) # n for age group
+
+mu_gnr_vec <- c(41, 7, 7, 8)
+mu_gnr_n <- c(71, 19, 12, 19)
+
 # Sets age-specific parameters for each period
-h <- c(71/126449, 20/252898, 12/502662, 21/1038045)  # Probability of hospitalization due to GNR infections
-h_se <- c(0.0000432584, 0.0000229607, 0.0000154507, 0.0000246348)  # Standard error for h
+h <- h_vec / h_n  # Probability of hospitalization due to GNR infections
 mu_ac <- c(0.0348, 0.0348, 0.004725, 0.02835) # All-cause mortality probability
-mu_gnr <- c(41/71, 7/19, 7/12, 8/19)    # Probability of death given hospitalization due to GNR infection
-mu_gnr_se <- c(0.13874, 0.175219, 0.341565, 0.195646)    # Standard error for mu2, for now just 10% of GNR mortality probability, discuss with Meagan
+mu_gnr <- mu_gnr_vec / mu_gnr_n    # Probability of death given hospitalization due to GNR infection
 length <- c("0 - <4 months ", "4 - <12 months", "12 - <24 months", "24 - 59 months")
 
 # Defines number of simulations for Monte Carlo model
@@ -25,18 +29,19 @@ other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 total_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 survived_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 
+
 # Monte Carlo simulation
 for (sim in 1:n_simulations) {
   remaining_cohort <- birth_cohort
  
   for (age in 1:periods) {
    # Calculates number of hospitalizations, deaths due to GNR, and other cause deaths
-    h_vec_sim[sim, age] <- rnorm(1, mean = h[age], sd = h_se[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
+    h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
     #QUESTION FOR MEAGAN - what about negative h_vec_sim values? do we need to add a lower limit of 0? No right, because the binomial distribution starts at 0 so can't have negative hospitalizations
-    hospitalizations_sim[sim, age] <- rbinom(1, remaining_cohort, h_vec_sim[age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
+    hospitalizations_sim[sim, age] <- rbinom(1, remaining_cohort, h_vec_sim[sim,age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
     #QUESTION FOR MEAGAN - do we need to create a normal distribution for deaths as well, followed by binomial, or just binomial here sufficient? Believe we do so I incorporated that here!
-    mu_gnr_sim[sim, age] <- rnorm(1, mean= mu_gnr[age], sd = mu_gnr_se[age])
-    deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_sim[sim, age], mu_gnr_sim[age])
+    mu_gnr_sim[sim, age] <- rbeta(1, mu_gnr_vec[age], mu_gnr_n[age] - mu_gnr_vec[age])
+    deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_sim[sim, age], mu_gnr_sim[sim,age])
     other_cause_deaths_sim[sim, age] <- rbinom(1, remaining_cohort, mu_ac[age]) - deaths_due_to_gnr_sim[sim, age]
      
    # Calculates the number of survivors
