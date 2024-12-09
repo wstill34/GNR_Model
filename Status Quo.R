@@ -91,4 +91,4 @@ cat("Period\tDuration\tHospitalizations\tGNR Deaths\tOther-cause Deaths\tSurvivo
 for (age in 1:periods) {
   cat(age, "\t", length[age], "\t", round(mean(hospitalizations_sim[, age])), "\t", round(mean(deaths_due_to_gnr_sim[, age])), "\t", round(mean(other_cause_deaths_sim[, age])), "\t", round(mean(survived_sim[, age])), "\n")
 }
-#QUESTION FOR MEAGAN, results are more hospitalizations than I would expect, discuss reasons why/if this is a probable error?
+#Results add up

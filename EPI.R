@@ -63,8 +63,8 @@ for (sim in 1:n_simulations) {
   e1_sample[sim] <- max(min(e1_sample[sim], 1), 0)
   
   remaining_cohort <- birth_cohort
-  vaxed_population <- remaining_cohort*v1_sample[sim]
-  unvax_population <- remaining_cohort*(1-v1_sample[sim])
+  vaxed_population <- round(remaining_cohort*v1_sample[sim])
+  unvax_population <- round(remaining_cohort*(1-v1_sample[sim]))
   for (age in 1:periods) {
     if (age == 1) {
       # Period 1: no one is vaccinated before 4 months'
@@ -91,8 +91,8 @@ for (sim in 1:n_simulations) {
       remaining_cohort <- survived_sim[sim, age]
       
       # Period 2 and beyond: some proportion vaccinated and protection conferred for 5 years
-      vaxed_population <- survived_vaxed_sim[sim, age]
-      unvax_population <- survived_unvax_sim[sim, age]
+      vaxed_population <- round(survived_vaxed_sim[sim, age])
+      unvax_population <- round(survived_unvax_sim[sim, age])
     } else {
 
       h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
@@ -115,46 +115,48 @@ for (sim in 1:n_simulations) {
       total_deaths_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] + total_other_cause_deaths_sim[sim, age]
       
       # Update the remaining cohort for the next period
-      unvax_population <- survived_unvax_sim[sim, age]
-      vaxed_population <- survived_vaxed_sim[sim, age]
+      unvax_population <- round(survived_unvax_sim[sim, age])
+      vaxed_population <- round(survived_vaxed_sim[sim, age])
     }
   }
 }
 
+
 # Summarizes the results with confidence intervals
 # First adds the total hospitalizations and deaths for each simulation
-total_hospitalizations_sim <- rowSums(hospitalizations_sim)
-total_deaths_due_to_gnr_sim <- rowSums(deaths_due_to_gnr_sim)
-total_other_cause_deaths_sim <- rowSums(other_cause_deaths_sim)
-total_all_cause_deaths_sim <- rowSums(total_deaths_sim)
+hospitalizations_sim <- rowSums(hospitalizations_total_sim)
+deaths_due_to_gnr_sim <- rowSums(total_deaths_due_to_gnr_sim)
+other_cause_deaths_sim <- rowSums(total_other_cause_deaths_sim)
+all_cause_deaths_sim <- rowSums(total_deaths_sim)
 
 # Establishes the confidence interval function
 ci <- function(x) quantile(x, probs=c(0.025, 0.975))
 
-total_hospitalizations_ci <- ci(total_hospitalizations_sim)
-total_deaths_due_to_gnr_ci <- ci(total_deaths_due_to_gnr_sim)
-total_other_cause_deaths_ci <- ci(total_other_cause_deaths_sim)
-total_all_cause_deaths_ci <- ci(total_all_cause_deaths_sim)
+total_hospitalizations_ci <- ci(hospitalizations_sim)
+total_deaths_due_to_gnr_ci <- ci(deaths_due_to_gnr_sim)
+total_other_cause_deaths_ci <- ci(other_cause_deaths_sim)
+total_all_cause_deaths_ci <- ci(all_cause_deaths_sim)
 
-# Prints the results
-cat("Total hospitalizations due to GNR infections over 5 years:", mean(total_hospitalizations_sim), "\n")
+
+# Print the results
+cat("Total hospitalizations due to GNR infections over 5 years:", mean(hospitalizations_sim), "\n")
 cat("95% CI for total hospitalizations:", total_hospitalizations_ci, "\n\n")
 
-cat("Total deaths due to GNR infections over 5 years:", mean(total_deaths_due_to_gnr_sim), "\n")
+cat("Total deaths due to GNR infections over 5 years:", mean(deaths_due_to_gnr_sim), "\n")
 cat("95% CI for total deaths due to GNR:", total_deaths_due_to_gnr_ci, "\n\n")
 
-cat("Total deaths due to other causes over 5 years:", mean(total_other_cause_deaths_sim), "\n")
+cat("Total deaths due to other causes over 5 years:", mean(other_cause_deaths_sim), "\n")
 cat("95% CI for total deaths due to other causes:", total_other_cause_deaths_ci, "\n\n")
 
-cat("Total all-cause deaths over 5 years:", mean(total_all_cause_deaths_sim), "\n")
+cat("Total all-cause deaths over 5 years:", mean(all_cause_deaths_sim), "\n")
 cat("95% CI for total all-cause deaths:", total_all_cause_deaths_ci, "\n\n")
 
 cat("Number of individuals surviving at the end of 5 years:", mean(survived_sim[, periods]), "\n")
 cat("95% CI for survivors:", ci(survived_sim[, periods]), "\n\n")
 
-# Display results by age group
+# Displays results by year
 cat("\nResults by period (mean values):\n")
 cat("Period\tHospitalizations\tGNR Deaths\tOther-cause Deaths\tTotal Deaths\tSurvivors\n")
 for (age in 1:periods) {
-  cat(age, "\t", mean(hospitalizations_sim[, age]), "\t\t", mean(deaths_due_to_gnr_sim[, age]), "\t\t", mean(other_cause_deaths_sim[, age]), "\t\t", mean(total_deaths_sim[, age]), "\t\t", mean(survived_sim[, age]), "\n")
+  cat(age, "\t\t", round(mean(hospitalizations_total_sim[, age])), "\t\t", round(mean(total_deaths_due_to_gnr_sim[, age])), "\t\t", mean(total_other_cause_deaths_sim[, age]), "\t\t", mean(total_deaths_sim[, age]), "\t\t", mean(survived_sim[, age]), "\n")
 }

@@ -62,7 +62,7 @@ for (sim in 1:n_simulations) {
   
   for (age in 1:periods) {
     if (age == 1) {
-      # Period 1: no one is vaccinated before 4 months'
+      # Period 1: maternal vaccine confers protection to those who received maternal vaccine months'
       h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
       hospitalizations_unvax_sim[sim, age] <- rbinom(1, unvax_population, h_vec_sim[sim,age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
       hospitalizations_vaxed_sim[sim, age] <- rbinom(1, vaxed_population, h_vec_sim[sim, age]*(1 - em_sample[sim]))
@@ -103,7 +103,7 @@ for (sim in 1:n_simulations) {
   }
 }
 
-  
+
 # Summarizes the results with confidence intervals
 # First adds the total hospitalizations and deaths for each simulation
 hospitalizations_sim <- rowSums(hospitalizations_total_sim)
@@ -142,4 +142,3 @@ cat("Period\tHospitalizations\tGNR Deaths\tOther-cause Deaths\tTotal Deaths\tSur
 for (age in 1:periods) {
   cat(age, "\t\t", round(mean(hospitalizations_total_sim[, age])), "\t\t", round(mean(total_deaths_due_to_gnr_sim[, age])), "\t\t", mean(total_other_cause_deaths_sim[, age]), "\t\t", mean(total_deaths_sim[, age]), "\t\t", mean(survived_sim[, age]), "\n")
 }
-
