@@ -1,18 +1,22 @@
-# Sets the initial parameters birth cohort (number of individuals at time 0) and 
+# Sets the initial parameters birth cohort (number of individuals at time 0)
 # periods of time (4 periods: 0-<4 months, 4-<12 months, 12-<24 months, 24-<60 months )
 birth_cohort <- 112680
 periods <- 4
 
+h_vec <- c(71, 20, 12, 21) # GNR hospitalized patients by age group
+h_n <- c(126449, 252898, 502662, 1038045) # n for age group
+
+mu_gnr_vec <- c(41, 7, 7, 8)
+mu_gnr_n <- c(71, 19, 12, 19)
+
 # Sets age-specific parameters for each period
-h <- c(0.0002003, 0.0000448, 0.0000279, 0.0000491)  # Probability of hospitalization due to GNR infections
-h_se <- c(0.00004476, 0.00002117, 0.00001669, 0.00002216)  # Standard error for h
-mu1 <- c(0.0348, 0.0348, 0.004725, 0.02835) # All-cause mortality probability
-mu1_se <- c(0.00348, 0.00348, 0.0004725, 0.002835) # Standard error for mu1, for now just 10% of all-cause mortality probability, discuss with Meagan
-mu2 <- c(0.5658, 0.3529, 0.5714, 0.3529)    # Probability of death given hospitalization due to GNR infection
-mu2_se <- c(0.05658, 0.03529, 0.05714, 0.03529)    # Standard error for mu2, for now just 10% of GNR mortality probability, discuss with Meagan
+h <- h_vec / h_n  # Probability of hospitalization due to GNR infections
+mu_ac <- c(0.0348, 0.0348, 0.004725, 0.02835) # All-cause mortality probability
+mu_gnr <- mu_gnr_vec / mu_gnr_n    # Probability of death given hospitalization due to GNR infection
+length <- c("0 - <4 months ", "4 - <12 months", "12 - <24 months", "24 - 59 months")
 
 # Sets vaccination parameters
-v1 <- 0.8   # Proportion vaccinated at end of year 1
+v1 <- 0.8   # Proportion vaccinated at end of period 1
 v1_se <- 0.08 # Standard error for v1, for now 10% of v1
 e1 <- 0.7   # Vaccine efficacy in reducing hospitalizations
 e1_se <- 0.07  # Standard error for e1, for now 10% of e1
@@ -21,61 +25,99 @@ e1_se <- 0.07  # Standard error for e1, for now 10% of e1
 n_simulations <- 1000
 
 # Creates matrices to store the results from simulations
-hospitalizations_sim <- matrix(0, nrow=n_simulations, ncol=periods)
-deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
-other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+hospitalizations_total_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+hospitalizations_unvax_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+hospitalizations_vaxed_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+#Added h_vec_sim matrix of 1000 rows, 4 columns
+h_vec_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+#Also added mu_gnr_sim matrix of 1000 rows, 4 columns
+mu_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+unvax_deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+vaxed_deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+total_deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+unvax_other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+vaxed_other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+total_other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 total_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 survived_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+survived_vaxed_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+survived_unvax_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+v1_sample <- matrix(0, nrow=n_simulations, ncol=1)
+e1_sample <- matrix(0, nrow=n_simulations, ncol=1)
+#remaining_cohort <- matrix(0, nrow=n_simulations, ncol=periods)
+#remaining_cohort_end <- matrix(0, nrow=n_simulations, ncol=periods)
+#unvax_population <-matrix(0, nrow=n_simulations, ncol=periods)
+#vaxed_population <- matrix(0, nrow=n_simulations, ncol=periods)
+
+
 
 # Monte Carlo simulation
 for (sim in 1:n_simulations) {
-  remaining_cohort <- birth_cohort
-  
+
   # Sample v1 and e1
-  v1_sample <- rnorm(1, mean=v1, sd=v1_se)
-  e1_sample <- rnorm(1, mean=e1, sd=e1_se)
+  v1_sample[sim] <- rnorm(1, mean=v1, sd=v1_se)
+  e1_sample[sim] <- rnorm(1, mean=e1, sd=e1_se)
   
   # Ensure probabilities remain within [0, 1]
-  v1_sample <- max(min(v1_sample, 1), 0)
-  e1_sample <- max(min(e1_sample, 1), 0)
+  v1_sample[sim] <- max(min(v1_sample[sim], 1), 0)
+  e1_sample[sim] <- max(min(e1_sample[sim], 1), 0)
   
+  remaining_cohort <- birth_cohort
+  vaxed_population <- remaining_cohort*v1_sample[sim]
+  unvax_population <- remaining_cohort*(1-v1_sample[sim])
   for (age in 1:periods) {
-    # Sample h, mu1, and mu2 with uncertainty
-    h_sample <- rnorm(1, mean=h[age], sd=h_se[age])
-    mu1_sample <- rnorm(1, mean=mu1[age], sd=mu1_se[age])
-    mu2_sample <- rnorm(1, mean=mu2[age], sd=mu2_se[age])
-    
-    # Ensure probabilities remain within [0, 1]
-    h_sample <- max(min(h_sample, 1), 0)
-    mu1_sample <- max(min(mu1_sample, 1), 0)
-    mu2_sample <- max(min(mu2_sample, 1), 0)
-    
     if (age == 1) {
-      # Period 1: no one is vaccinated before 4 months
-      hospitalizations_sim[sim, age] <- remaining_cohort * h_sample
-    } else {
+      # Period 1: no one is vaccinated before 4 months'
+      h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
+      hospitalizations_unvax_sim[sim, age] <- rbinom(1, remaining_cohort, h_vec_sim[sim,age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
+      hospitalizations_vaxed_sim[sim, age] <- 0
+      hospitalizations_total_sim[sim, age] <- hospitalizations_unvax_sim[sim, age] + hospitalizations_vaxed_sim[sim, age]
+      
+      mu_gnr_sim[sim, age] <- rbeta(1, mu_gnr_vec[age], mu_gnr_n[age] - mu_gnr_vec[age])
+      unvax_deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_unvax_sim[sim, age], mu_gnr_sim[sim,age])
+      vaxed_deaths_due_to_gnr_sim[sim, age] <- 0
+      total_deaths_due_to_gnr_sim[sim, age] <- unvax_deaths_due_to_gnr_sim[sim, age] + vaxed_deaths_due_to_gnr_sim[sim, age]
+      unvax_other_cause_deaths_sim[sim, age] <- rbinom(1, remaining_cohort, mu_ac[age]) - unvax_deaths_due_to_gnr_sim[sim, age]
+      vaxed_other_cause_deaths_sim[sim, age] <- 0
+      total_other_cause_deaths_sim[sim, age] <- unvax_other_cause_deaths_sim[sim, age] + vaxed_other_cause_deaths_sim[sim, age]
+      
+      # Calculates the number of survivors
+      survived_sim[sim, age] <- remaining_cohort - total_deaths_due_to_gnr_sim[sim, age] - total_other_cause_deaths_sim[sim, age]
+      survived_vaxed_sim[sim, age] <- survived_sim[sim, age] * v1_sample[sim]
+      survived_unvax_sim[sim, age] <- survived_sim[sim, age] * (1 - v1_sample[sim])
+      total_deaths_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] + total_other_cause_deaths_sim[sim, age]
+      
+      # Update the remaining cohort for the next period
+      remaining_cohort <- survived_sim[sim, age]
+      
       # Period 2 and beyond: some proportion vaccinated and protection conferred for 5 years
-      vaccinated_population <- remaining_cohort * v1_sample
-      unvaccinated_population <- remaining_cohort * (1 - v1_sample)
+      vaxed_population <- survived_vaxed_sim[sim, age]
+      unvax_population <- survived_unvax_sim[sim, age]
+    } else {
+
+      h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
+      hospitalizations_unvax_sim[sim, age] <- rbinom(1, unvax_population, h_vec_sim[sim,age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
+      hospitalizations_vaxed_sim[sim, age] <- rbinom(1, vaxed_population, h_vec_sim[sim,age]*(1 - e1_sample[sim])) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
+      hospitalizations_total_sim[sim, age] <- hospitalizations_unvax_sim[sim, age] + hospitalizations_vaxed_sim[sim, age]
       
-      # Vaccinated group has some protection, reduced probability of hospitalization
-      hospitalizations_vaccinated <- vaccinated_population * h_sample * (1 - e1_sample)
-      hospitalizations_unvaccinated <- unvaccinated_population * h_sample
+      mu_gnr_sim[sim, age] <- rbeta(1, mu_gnr_vec[age], mu_gnr_n[age] - mu_gnr_vec[age])
+      unvax_deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_unvax_sim[sim, age], mu_gnr_sim[sim,age])
+      vaxed_deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_vaxed_sim[sim, age], mu_gnr_sim[sim,age])
+      total_deaths_due_to_gnr_sim[sim, age] <- unvax_deaths_due_to_gnr_sim[sim, age] + vaxed_deaths_due_to_gnr_sim[sim, age]
+      unvax_other_cause_deaths_sim[sim, age] <- rbinom(1, unvax_population, mu_ac[age]) - unvax_deaths_due_to_gnr_sim[sim, age]
+      vaxed_other_cause_deaths_sim[sim, age] <- rbinom(1, vaxed_population, mu_ac[age]) - vaxed_deaths_due_to_gnr_sim[sim, age]
+      total_other_cause_deaths_sim[sim, age] <- unvax_other_cause_deaths_sim[sim, age] + vaxed_other_cause_deaths_sim[sim, age]
       
-      # Total hospitalizations
-      hospitalizations_sim[sim, age] <- hospitalizations_vaccinated + hospitalizations_unvaccinated
+      # Calculates the number of survivors
+      survived_unvax_sim[sim, age] <- unvax_population - unvax_deaths_due_to_gnr_sim[sim, age] - unvax_other_cause_deaths_sim[sim, age]
+      survived_vaxed_sim[sim, age] <- vaxed_population - vaxed_deaths_due_to_gnr_sim[sim, age] - vaxed_other_cause_deaths_sim[sim, age]
+      survived_sim[sim, age] <- survived_unvax_sim[sim, age] + survived_vaxed_sim[sim, age]
+      total_deaths_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] + total_other_cause_deaths_sim[sim, age]
+      
+      # Update the remaining cohort for the next period
+      unvax_population <- survived_unvax_sim[sim, age]
+      vaxed_population <- survived_vaxed_sim[sim, age]
     }
-    
-    # Calculates deaths due to GNR and other causes
-    deaths_due_to_gnr_sim[sim, age] <- hospitalizations_sim[sim, age] * mu2_sample
-    other_cause_deaths_sim[sim, age] <- remaining_cohort * mu1_sample - deaths_due_to_gnr_sim[sim, age]
-    total_deaths_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] + other_cause_deaths_sim[sim, age]
-    
-    # Calculates the number of survivors
-    survived_sim[sim, age] <- remaining_cohort - total_deaths_sim[sim, age]
-    
-    # Updates the remaining cohort for the next year
-    remaining_cohort <- survived_sim[sim, age]
   }
 }
 
