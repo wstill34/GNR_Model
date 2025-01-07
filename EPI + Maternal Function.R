@@ -112,9 +112,13 @@ simulate_epi_maternal <- function (birth_cohort, periods, h, mu_ac, mu_gnr, n_si
   all_cause_deaths_sim <- rowSums(total_deaths_sim)
   expected_hospitalizations <- mean(hospitalizations_sim)
   std_dev_hospitalizations <- sd(hospitalizations_sim)
+  expected_gnr_deaths <- mean(deaths_due_to_gnr_sim)
+  std_dev_gnr_deaths <- sd(deaths_due_to_gnr_sim)
   
-  return (c(expected_hospitalizations, std_dev_hospitalizations))
+  return(data.frame(expected_hosp = expected_hospitalizations, std_dev_hosp = std_dev_hospitalizations, expected_gnr_deaths = expected_gnr_deaths, std_dev_gnr_deaths = std_dev_gnr_deaths))
+  
+  #return (c(expected_hospitalizations, std_dev_hospitalizations))
 }
 
-simulate_epi_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se, v1, v1_se, e1, e1_se)
+joint_data <- simulate_epi_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se, v1, v1_se, e1, e1_se)
   

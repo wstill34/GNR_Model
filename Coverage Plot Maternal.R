@@ -1,7 +1,8 @@
+# Creates function to simulate the reduction in hospitalizations for maternal vaccine based on varying coverage levels
 simulate_reduced_hospitalizations_mat <- function(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se, min_coverage, max_coverage, step) {
   
   
-  baseline_hospitalizations_mean_sd <- simulate_status_quo(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations)
+  baseline_hospitalizations <- status_quo_data[1,1]
   
   coverage_levels <- seq(min_coverage, max_coverage, by = step)
   reduced_hospitalizations_percent <- numeric(length(coverage_levels))
@@ -11,8 +12,8 @@ simulate_reduced_hospitalizations_mat <- function(birth_cohort, periods, h, mu_a
   
   for (i in seq_along(coverage_levels)) {
     vm <- coverage_levels[i]
-    reduced_hospitalizations_percent[i] <- (baseline_hospitalizations_mean_sd - simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se))/baseline_hospitalizations_mean_sd
-    reduced_hospitalizations_n[i] <- baseline_hospitalizations_mean_sd - simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se)
+    reduced_hospitalizations_percent[i] <- (baseline_hospitalizations - simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se)[1,1])/baseline_hospitalizations
+    reduced_hospitalizations_n[i] <- baseline_hospitalizations - simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se)[1,1]
     }
   
   return(data.frame(coverage = coverage_levels, reducedhosppercent = reduced_hospitalizations_percent, reducedhospn = reduced_hospitalizations_n))

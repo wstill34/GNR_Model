@@ -21,9 +21,7 @@ for (sim in 1:n_simulations) {
   for (age in 1:periods) {
    # Calculates number of hospitalizations, deaths due to GNR, and other cause deaths
     h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
-    #QUESTION FOR MEAGAN - what about negative h_vec_sim values? do we need to add a lower limit of 0? No right, because the binomial distribution starts at 0 so can't have negative hospitalizations
     hospitalizations_sim[sim, age] <- rbinom(1, remaining_cohort, h_vec_sim[sim,age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
-    #QUESTION FOR MEAGAN - do we need to create a normal distribution for deaths as well, followed by binomial, or just binomial here sufficient? Believe we do so I incorporated that here!
     mu_gnr_sim[sim, age] <- rbeta(1, mu_gnr_vec[age], mu_gnr_n[age] - mu_gnr_vec[age])
     deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_sim[sim, age], mu_gnr_sim[sim,age])
     other_cause_deaths_sim[sim, age] <- rbinom(1, remaining_cohort, mu_ac[age]) - deaths_due_to_gnr_sim[sim, age]
@@ -46,9 +44,17 @@ total_other_cause_deaths_sim <- rowSums(other_cause_deaths_sim)
 total_all_cause_deaths_sim <- rowSums(total_deaths_sim)
 expected_hospitalizations <- mean(total_hospitalizations_sim)
 std_dev_hospitalizations <- sd(total_hospitalizations_sim)
+expected_gnr_deaths <- mean(total_deaths_due_to_gnr_sim)
+std_dev_gnr_deaths <- sd(total_deaths_due_to_gnr_sim)
 
 #return (c(expected_hospitalizations, std_dev_hospitalizations))
-return (expected_hospitalizations)
+#return (expected_hospitalizations)
+
+return(data.frame(expected_hosp = expected_hospitalizations, std_dev_hosp = std_dev_hospitalizations, expected_gnr_deaths = expected_gnr_deaths, std_dev_gnr_deaths = std_dev_gnr_deaths))
+#return(data.frame(coverage = coverage_levels, reducedhospitalizations2 = reduced_hospitalizations_percentage))
+#return(c(reduced_hospitalizations_percentage))
+
 }
 
-simulate_status_quo(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations)
+#generate data
+status_quo_data <- simulate_status_quo(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations)

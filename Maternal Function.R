@@ -89,9 +89,13 @@ other_cause_deaths_sim_mat <- rowSums(total_other_cause_deaths_sim_mat)
 all_cause_deaths_sim_mat <- rowSums(total_deaths_sim_mat)
 expected_hospitalizations_mat <- mean(hospitalizations_sim_mat)
 std_dev_hospitalizations_mat <- sd(hospitalizations_sim_mat)
+expected_gnr_deaths_mat <- mean(deaths_due_to_gnr_sim_mat)
+std_dev_gnr_deaths_mat <- sd(deaths_due_to_gnr_sim_mat)
+
+return(data.frame(expected_hosp = expected_hospitalizations_mat, std_dev_hosp = std_dev_hospitalizations_mat, expected_gnr_deaths = expected_gnr_deaths_mat, std_dev_gnr_deaths = std_dev_gnr_deaths_mat))
 
 #return (c(expected_hospitalizations_mat, std_dev_hospitalizations_mat))
-return (expected_hospitalizations_mat)
+#return (expected_hospitalizations_mat)
 }
 
-simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se)
+maternal_data <- simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, vm_se, em, em_se)

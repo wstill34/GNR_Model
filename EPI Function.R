@@ -109,9 +109,11 @@ other_cause_deaths_sim_epi <- rowSums(total_other_cause_deaths_sim_epi)
 all_cause_deaths_sim_epi <- rowSums(total_deaths_sim_epi)
 expected_hospitalizations_epi <- mean(hospitalizations_sim_epi)
 std_dev_hospitalizations_epi <- sd(hospitalizations_sim_epi)
+expected_gnr_deaths_epi <- mean(deaths_due_to_gnr_sim_epi)
+std_dev_gnr_deaths_epi <- sd(deaths_due_to_gnr_sim_epi)
 
-#return (c(expected_hospitalizations_epi, std_dev_hospitalizations_epi))
-return (expected_hospitalizations_epi)
+return(data.frame(expected_hosp = expected_hospitalizations_epi, std_dev_hosp = std_dev_hospitalizations_epi, expected_gnr_deaths = expected_gnr_deaths_epi, std_dev_gnr_deaths = std_dev_gnr_deaths_epi))
+#return (expected_hospitalizations_epi)
 }
 
-simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, v1_se, e1, e1_se)
+epi_data <- simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, v1_se, e1, e1_se)

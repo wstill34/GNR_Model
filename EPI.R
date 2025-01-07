@@ -57,6 +57,7 @@ for (sim in 1:n_simulations) {
   # Sample v1 and e1
   v1_sample[sim] <- rnorm(1, mean=v1, sd=v1_se)
   e1_sample[sim] <- rnorm(1, mean=e1, sd=e1_se)
+  #REMOVE VARIABILITY AROUND E1, EFFICACY FOR BOTH EPI AND MATERNAL VACCINES
   
   # Ensure probabilities remain within [0, 1]
   v1_sample[sim] <- max(min(v1_sample[sim], 1), 0)
