@@ -1,5 +1,5 @@
 # Creates function to simulate the reduction in hospitalizations for Childhood vaccine based on varying coverage levels
-simulate_reduced_hospitalizations_epi <- function(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, v1_se, e1, e1_se, min_coverage, max_coverage, step) {
+simulate_reduced_hospitalizations_epi <- function(birth_cohort, periods, h, h_vec_sim, mu_gnr_sim, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi, min_coverage, max_coverage, step) {
   
   
   baseline_hospitalizations <- status_quo_data[1,1]
@@ -12,8 +12,8 @@ simulate_reduced_hospitalizations_epi <- function(birth_cohort, periods, h, mu_a
   
   for (i in seq_along(coverage_levels)) {
      v1 <- coverage_levels[i]
-     reduced_hospitalizations_percent[i] <- (baseline_hospitalizations - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, v1_se, e1, e1_se)[1,1])/baseline_hospitalizations
-     reduced_hospitalizations_n[i] <- baseline_hospitalizations - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, v1_se, e1, e1_se)[1,1]
+     reduced_hospitalizations_percent[i] <- (baseline_hospitalizations - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi)[1,1])/baseline_hospitalizations
+     reduced_hospitalizations_n[i] <- baseline_hospitalizations - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi)[1,1]
      
   }
   
@@ -24,7 +24,7 @@ simulate_reduced_hospitalizations_epi <- function(birth_cohort, periods, h, mu_a
 }
 
 #generate data
-coverage_data_epi <- simulate_reduced_hospitalizations_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, v1_se, e1, e1_se, min_coverage, max_coverage, step)
+coverage_data_epi <- simulate_reduced_hospitalizations_epi(birth_cohort, periods, h, h_vec_sim, mu_gnr_sim, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi, min_coverage, max_coverage, step)
 #simulate_reduced_hospitalizations_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, v1_se, e1, e1_se, min_coverage, max_coverage, step)
 
 
@@ -41,7 +41,7 @@ ggplot(coverage_data_epi, aes(x= coverage, y = reducedhospn)) +
   theme_minimal()
 ggsave("EPI Coverage Graph.png", width = 5, height = 5)
 
-ggplot(coverage_data, aes(x= coverage, y = reducedhosppercent)) +
+ggplot(coverage_data_epi, aes(x= coverage, y = reducedhosppercent)) +
   geom_line(color = "blue", size = 1) +
   geom_point(color = "red") +
   labs(title = "Reduced Hospitalizations vs Coverage, Childhood Vaccine",
