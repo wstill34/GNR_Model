@@ -16,7 +16,7 @@ mu_ac <- c(0.0348, 0.0348, 0.004725, 0.02835) # All-cause mortality probability
 length <- c("0 - <4 months ", "4 - <12 months", "12 - <24 months", "24 - 59 months")
 
 # Defines number of simulations for Monte Carlo model
-n_simulations <- 1000
+n_simulations <- 10000
 
 # Sets childhood vaccination parameters
 #80.1% of children born 7 to 12 months after introduction received three doses of pentavalent rotavirus vaccine by 9 months of age
@@ -41,29 +41,44 @@ max_coverage <- 1.0
 #81.2% efficacy (95% CI: 63.1%, 90.5%)
 
 #For uncertainty distribution for EPI efficacy:
-a <- rnorm(1000, mean = log(.188), sd = ((log(.369)-log(.095))/3.98))
+a <- rnorm(n_simulations, mean = log(.188), sd = ((log(.369)-log(.095))/3.98))
 efficacy_epi <- 1 - exp(a)
-#hist(efficacy_epi)
+hist(efficacy_epi)
+mean(efficacy_epi)
 
 #Based on maternal influenza vaccine estimate from https://pubmed.ncbi.nlm.nih.gov/31259452/
 #56.8% efficacy (95% CI: 25.0, 75.1)
 
 #For uncertainty distribution for Maternal efficacy:
-b <- rnorm(1000, mean = log(.432), sd = ((log(.750)-log(.249))/3.98))
+b <- rnorm(n_simulations, mean = log(.432), sd = ((log(.750)-log(.249))/3.98))
 efficacy_mat <- 1 - exp(b)
-#hist(efficacy_mat)
+hist(efficacy_mat)
+mean(efficacy)
 
+mat_cost_per_dose <- 1
+discount_rate <- .03
+age_at_death <- c(2/12, 8/12, 18/12, 42/12)
+life_expectancy <- c(63.2, 63.2, 63.2, 63.2)
+remaining_years <- life_expectancy - age_at_death
+discounted_remaining_years <- (1 - exp(-discount_rate * remaining_years)) / discount_rate
 
 h_vec_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 mu_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+#mu_ac_sim <- matrix(0, nrow=n_simulations, ncol=periods)
 
 for (sim in 1:n_simulations) {
   for (age in 1:periods) {
     # Calculates number of hospitalizations, deaths due to GNR, and other cause deaths
     h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
     mu_gnr_sim[sim, age] <- rbeta(1, mu_gnr_vec[age], mu_gnr_n[age] - mu_gnr_vec[age])
+    #mu_ac_sim[sim, age] <- rbeta(1, mu_ac_vec[age]
     }
 }
 
+ci <- function(x) quantile(x, probs=c(0.025, 0.975))
 
+install.packages("writexl")
+
+#library("writexl")
+#write_xlsx(status_quo_data,"C:/Users/wstil/OneDrive/Desktop/Aim 3/GNR Model/status_quo_df.xlsx", col_name=TRUE, format_headers=FALSE)
 
