@@ -1,6 +1,6 @@
-#ICER functions
+#ICER function for range of dose cost, Figure 3 of paper
 #Maternal ICER function
-simulate_ICER_mat <- function(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, remaining_years, mat_cost_per_dose, min_cost, max_cost, step_cost) {
+simulate_ICER_mat <- function(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, efficacy_mat, remaining_years, mat_cost_per_dose, min_cost, max_cost, step_cost) {
   
   min_cost <- 0.25
   max_cost <- 5
@@ -10,23 +10,25 @@ simulate_ICER_mat <- function(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulat
   icer <- numeric(length(cost_levels))
   icer_low_ci <- numeric(length(cost_levels))
   icer_high_ci <- numeric(length(cost_levels))
+  icer_median <- numeric(length(cost_levels))
   
     for (i in seq_along(cost_levels)) {
       mat_cost_per_dose <- cost_levels[i]
-      icer[i] <- simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, remaining_years, mat_cost_per_dose)[,4]
-      icer_low_ci[i] <- simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, remaining_years, mat_cost_per_dose)[,5]
-      icer_high_ci[i] <- simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, remaining_years, mat_cost_per_dose)[,6]
+      icer[i] <- simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, efficacy_mat, remaining_years, mat_cost_per_dose)[,4]
+      icer_low_ci[i] <- simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, efficacy_mat, remaining_years, mat_cost_per_dose)[,5]
+      icer_high_ci[i] <- simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, efficacy_mat, remaining_years, mat_cost_per_dose)[,6]
+      icer_median[i] <- simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, efficacy_mat, remaining_years, mat_cost_per_dose)[,7]
     }
   
-  return(data.frame(cost = cost_levels, icer = icer, icer_low = icer_low_ci, icer_high = icer_high_ci))
+  return(data.frame(cost = cost_levels, icer = icer, icer_low = icer_low_ci, icer_high = icer_high_ci, icer_median = icer_median))
   
 }
 
-icer_mat_new_disc <- simulate_ICER_mat(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, remaining_years, mat_cost_per_dose, min_cost, max_cost, step_cost)
+icer_mat_cost <- simulate_ICER_mat(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, efficacy_mat, remaining_years, mat_cost_per_dose, min_cost, max_cost, step_cost)
 
 
 library("writexl")
-write_xlsx(icer_mat_new_disc,"C:/Users/wstil/OneDrive/Desktop/Aim 3/ICER Figure/icer_mat_disc_final_v2.xlsx", col_name=TRUE, format_headers=FALSE)
+write_xlsx(icer_mat_cost,"C:/Users/wstil/OneDrive/Desktop/Aim 3/ICER Figure/icer_mat_undisc.xlsx", col_name=TRUE, format_headers=FALSE)
 
 #EPI ICER function
 

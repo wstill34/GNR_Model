@@ -1,7 +1,84 @@
 #Calculations to compare vaccine scenarios
 
+# Maternal vs Status Quo
+#Hospitalizations
+hosp_diff_mat_sq <- sq_hosps_deaths_dalys[,1] - maternal_hosps_deaths_dalys[,1]
+mean(hosp_diff_mat_sq) #Outputs Mean hosp averted
+ci(hosp_diff_mat_sq) #Outputs CI hosp averted
+
+death_diff_mat_sq <- sq_hosps_deaths_dalys[,2] - maternal_hosps_deaths_dalys[,2]
+mean(death_diff_mat_sq) #Outputs Mean death averted
+ci(death_diff_mat_sq) #Outputs CI death averted
+
+daly_diff_mat_sq <- sq_hosps_deaths_dalys[,3] - maternal_hosps_deaths_dalys[,3]
+mean(daly_diff_mat_sq) #Outputs Mean daly averted
+ci(daly_diff_mat_sq) #Outputs CI daly averted
+
 # EPI vs Status Quo
 #Hospitalizations
+hosp_diff_epi_sq <- sq_hosps_deaths_dalys[,1] - epi_hosps_deaths_dalys[,1]
+mean(hosp_diff_epi_sq) #Outputs Mean hosp averted
+ci(hosp_diff_epi_sq) #Outputs CI hosp averted
+
+death_diff_epi_sq <- sq_hosps_deaths_dalys[,2] - epi_hosps_deaths_dalys[,2]
+mean(death_diff_epi_sq) #Outputs Mean death averted
+ci(death_diff_epi_sq) #Outputs CI death averted
+
+daly_diff_epi_sq <- sq_hosps_deaths_dalys[,3] - epi_hosps_deaths_dalys[,3]
+mean(daly_diff_epi_sq) #Outputs Mean daly averted
+ci(daly_diff_epi_sq) #Outputs CI daly averted
+
+# Joint vs Status Quo
+#Hospitalizations
+hosp_diff_joint_sq <- sq_hosps_deaths_dalys[,1] - joint_hosps_deaths_dalys[,1]
+mean(hosp_diff_joint_sq) #Outputs Mean hosp averted
+ci(hosp_diff_joint_sq) #Outputs CI hosp averted
+
+death_diff_joint_sq <- sq_hosps_deaths_dalys[,2] - joint_hosps_deaths_dalys[,2]
+mean(death_diff_joint_sq) #Outputs Mean death averted
+ci(death_diff_joint_sq) #Outputs CI death averted
+
+daly_diff_joint_sq <- sq_hosps_deaths_dalys[,3] - joint_hosps_deaths_dalys[,3]
+mean(daly_diff_joint_sq) #Outputs Mean daly averted
+ci(daly_diff_joint_sq) #Outputs CI daly averted
+
+#All costs
+#SQ
+mean(sq_hosps_deaths_dalys[,1])*157.50 #Outputs expected medical costs, sq
+ci(sq_hosps_deaths_dalys[,1])*157.50 #Outputs confidence interval of medical costs, sq
+
+#Maternal
+mean(maternal_hosps_deaths_dalys[,1])*157.50 #Outputs expected medical costs, maternal
+ci(maternal_hosps_deaths_dalys[,1])*157.50 #Outputs CI of medical costs, maternal
+coverage_mat*birth_cohort*1.47 #Outputs maternal vaccine cost
+mean(maternal_hosps_deaths_dalys[,1])*157.50 + coverage_mat*birth_cohort*1.47 #Outputs expected total costs, maternal
+ci(maternal_hosps_deaths_dalys[,1])*157.50 + c(coverage_mat*birth_cohort*1.47,coverage_mat*birth_cohort*1.47) #Outpus CI of total cost, maternal
+
+#EPI
+mean(epi_hosps_deaths_dalys[,1])*157.50 #Outputs expected medical costs, epi
+ci(epi_hosps_deaths_dalys[,1])*157.50 #Outputs CI of medical costs, epi
+birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47 #Outputs epi vaccine cost
+mean(epi_hosps_deaths_dalys[,1])*157.50 + birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47 #Outputs expected total cost, epi
+ci(epi_hosps_deaths_dalys[,1])*157.50 + c(birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47,birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47) #Outputs CI of total cost, epi
+
+#Joint
+mean(joint_hosps_deaths_dalys[,1])*157.50 #Outputs expected medical costs, joint
+ci(joint_hosps_deaths_dalys[,1])*157.50 #Outputs CI of medical costs, joint
+coverage_mat*birth_cohort*1.47 + birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47 #Outputs joint vaccine cost
+mean(joint_hosps_deaths_dalys[,1])*157.50 + (coverage_mat*birth_cohort*1.47 + birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47) #Outputs expected total cost, epi
+ci(joint_hosps_deaths_dalys[,1])*157.50 + c((coverage_mat*birth_cohort*1.47 + birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47),(coverage_mat*birth_cohort*1.47 + birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47)) #Outputs CI of total cost, epi
+
+#Difference between joint and maternal costs
+(mean(joint_hosps_deaths_dalys[,1])*157.50 + coverage_mat*birth_cohort*1.47 + birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47) - (mean(maternal_hosps_deaths_dalys[,1])*157.50 + coverage_mat*birth_cohort*1.47)
+#Difference between DALYs averted, joint and maternal
+mean(maternal_hosps_deaths_dalys[,3]) - mean(joint_hosps_deaths_dalys[,3])
+#ICER estimate
+((mean(joint_hosps_deaths_dalys[,1])*157.50 + coverage_mat*birth_cohort*1.47 + birth_cohort*(1-mu_ac[1])*coverage_epi*2*1.47) - (mean(maternal_hosps_deaths_dalys[,1])*157.50 + coverage_mat*birth_cohort*1.47))/(mean(maternal_hosps_deaths_dalys[,3]) - mean(joint_hosps_deaths_dalys[,3]))
+
+
+
+
+
 reduced_hosp_epi <- status_quo_data[1,1] - epi_data[1,1]
 std_dev_hosp_epi_sq <- sqrt(epi_data[1,2]^2 + status_quo_data[1,2]^2)
 
@@ -66,3 +143,5 @@ mean(joint_diff[,2])
 ci(joint_diff[,2])
 mean(joint_diff[,3])
 ci(joint_diff[,3])
+
+simulate_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, efficacy_mat, remaining_years, mat_cost_per_dose)[,1]

@@ -1,9 +1,9 @@
 # Creates function to simulate the reduction in hospitalizations for Childhood vaccine based on varying coverage levels
-simulate_reduced_hospitalizations_epi <- function(birth_cohort, periods, h, h_vec_sim, mu_gnr_sim, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi, min_coverage, max_coverage, step) {
+simulate_reduced_hospitalizations_epi <- function(birth_cohort, periods, h, h_vec_sim, mu_gnr_sim, mu_ac, mu_gnr, n_simulations, coverage_epi, efficacy_epi, min_coverage, max_coverage, step) {
   
   
-  baseline_hospitalizations <- status_quo_data[,1]
-  baseline_deaths <- status_quo_data[,16]
+  baseline_hospitalizations <- sq_data[,1]
+  baseline_deaths <- sq_data[,16]
 
   coverage_levels <- seq(min_coverage, max_coverage, by = step)
   reduced_hospitalizations_percent <- numeric(length(coverage_levels))
@@ -14,11 +14,11 @@ simulate_reduced_hospitalizations_epi <- function(birth_cohort, periods, h, h_ve
   #simulate reduced_hospitalizations for each coverage level
   
   for (i in seq_along(coverage_levels)) {
-     v1 <- coverage_levels[i]
-     reduced_hospitalizations_percent[i] <- (baseline_hospitalizations - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi)[,1])/baseline_hospitalizations
-     reduced_hospitalizations_n[i] <- baseline_hospitalizations - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi)[,1]
-     reduced_deaths_percent[i] <- (baseline_deaths - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi)[,16])/baseline_deaths
-     reduced_deaths_n[i] <- baseline_deaths - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi)[,16]
+     coverage_epi <- coverage_levels[i]
+     reduced_hospitalizations_percent[i] <- (baseline_hospitalizations - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_epi, efficacy_epi)[,1])/baseline_hospitalizations
+     reduced_hospitalizations_n[i] <- baseline_hospitalizations - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_epi, efficacy_epi)[,1]
+     reduced_deaths_percent[i] <- (baseline_deaths - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_epi, efficacy_epi)[,16])/baseline_deaths
+     reduced_deaths_n[i] <- baseline_deaths - simulate_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_epi, efficacy_epi)[,16]
   
   }
   
@@ -27,7 +27,7 @@ simulate_reduced_hospitalizations_epi <- function(birth_cohort, periods, h, h_ve
 }
 
 #generate data
-coverage_data_epi <- simulate_reduced_hospitalizations_epi(birth_cohort, periods, h, h_vec_sim, mu_gnr_sim, mu_ac, mu_gnr, n_simulations, v1, efficacy_epi, min_coverage, max_coverage, step)
+coverage_data_epi <- simulate_reduced_hospitalizations_epi(birth_cohort, periods, h, h_vec_sim, mu_gnr_sim, mu_ac, mu_gnr, n_simulations, coverage_epi, efficacy_epi, min_coverage, max_coverage, step)
 #simulate_reduced_hospitalizations_epi(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, v1, v1_se, e1, e1_se, min_coverage, max_coverage, step)
 
 library("writexl")

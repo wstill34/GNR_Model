@@ -1,221 +1,190 @@
-#Creates a function to simulate the mean and standard deviation for number of hospitalizations and deaths under joint EPI/childhood + maternal vaccine scenario
-simulate_epi_maternal <- function (birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, v1, efficacy_epi) {
+#Creates a function to simulate the joint epi/maternal vaccine scenario outputs
+simulate_joint <- function (birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, coverage_epi, efficacy_mat, efficacy_epi) {
 
-  sq_hospitalizations <- c(status_quo_hosps_deaths_dalys[,1])
+  sq_hospitalizations <- c(sq_hosps_deaths_dalys[,1])
   sq_hosp_cost <- sq_hospitalizations*157.50
-  sq_deaths <- c(status_quo_hosps_deaths_dalys[,2])
-  sq_daly_undisc <- c(status_quo_hosps_deaths_dalys[,3])
-  #sq_daly_disc <- c(status_quo_hosps_deaths_dalys[,4])
+  sq_deaths <- c(sq_hosps_deaths_dalys[,2])
+  sq_daly_undisc <- c(sq_hosps_deaths_dalys[,3])
+  sq_daly_disc <- c(sq_hosps_deaths_dalys[,4])
   mat_daly_undisc <- c(maternal_hosps_deaths_dalys[,3])
-  #mat_daly_disc <- c(maternal_hosps_deaths_dalys[,4])
-  mat_total_cost <- maternal_total_cost
+  mat_daly_disc <- c(maternal_hosps_deaths_dalys[,4])
+  mat_total_cost <- c(maternal_icer_matrix[,4])
   
-    # Creates matrices to store the results from simulations
-  hospitalizations_total_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+  # Creates matrices to store the results from simulations
+  hospitalizations_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   hospitalizations_unvax_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   hospitalizations_vaxed_sim <- matrix(0, nrow=n_simulations, ncol=periods)
-  #Added h_vec_sim matrix of 1000 rows, 4 columns
-  #h_vec_sim <- matrix(0, nrow=n_simulations, ncol=periods)
-  #Also added mu_gnr_sim matrix of 1000 rows, 4 columns
-  #mu_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   unvax_deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   vaxed_deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
-  total_deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+  deaths_due_to_gnr_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   unvax_other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   vaxed_other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
-  total_other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
+  other_cause_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   total_deaths_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   survived_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   survived_vaxed_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   survived_unvax_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   daly_sim <- matrix(0, nrow=n_simulations, ncol=periods)
   daly_discounted_sim <- matrix(0, nrow = n_simulations, ncol=periods)
-  #v1_sample <- matrix(0, nrow=n_simulations, ncol=1)
-  #e1_sample <- matrix(0, nrow=n_simulations, ncol=1)
-  #vm_sample <- matrix(0, nrow=n_simulations, ncol=1)
-  #em_sample <- matrix(0, nrow=n_simulations, ncol=1)
   
-  
+
   # Monte Carlo simulation
   for (sim in 1:n_simulations) {
     
-    # Sample v_m and e_m
-    #vm_sample[sim] <- rnorm(1, mean=vm, sd=vm_se)
-    #em_sample[sim] <- rnorm(1, mean=em, sd=em_se)
-    
-    # Ensure probabilities remain within [0, 1]
-    #vm_sample[sim] <- max(min(vm_sample[sim], 1), 0)
-    #em_sample[sim] <- max(min(em_sample[sim], 1), 0)
-    
-    # Sample v1 and e1
-    #v1_sample[sim] <- rnorm(1, mean=v1, sd=v1_se)
-    #e1_sample[sim] <- rnorm(1, mean=e1, sd=e1_se)
-    
-    # Ensure probabilities remain within [0, 1]
-    #v1_sample[sim] <- max(min(v1_sample[sim], 1), 0)
-    #e1_sample[sim] <- max(min(e1_sample[sim], 1), 0)
-    
     remaining_cohort <- birth_cohort
-    vaxed_population <- remaining_cohort*vm
-    unvax_population <- remaining_cohort*(1 - vm)
+    vaxed_population <- remaining_cohort * coverage_mat
+    unvax_population <- remaining_cohort * (1 - coverage_mat)
     
     for (age in 1:periods) {
       if (age == 1) {
-        # Period 1: maternal vaccine confers protection to those who received maternal vaccine'
-        #h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
-        hospitalizations_unvax_sim[sim, age] <- (unvax_population*h_vec_sim[sim,age])
-        #hospitalizations_unvax_sim[sim, age] <- rbinom(1, unvax_population, h_vec_sim[sim,age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
-        hospitalizations_vaxed_sim[sim, age] <- (vaxed_population*h_vec_sim[sim,age]*(1 - efficacy_mat[sim]))
-        #hospitalizations_vaxed_sim[sim, age] <- rbinom(1, vaxed_population, h_vec_sim[sim, age]*(1 - efficacy_mat[sim]))
-        hospitalizations_total_sim[sim, age] <- hospitalizations_unvax_sim[sim, age] + hospitalizations_vaxed_sim[sim, age]
         
-        #mu_gnr_sim[sim, age] <- rbeta(1, mu_gnr_vec[age], mu_gnr_n[age] - mu_gnr_vec[age])
+        # Period 1: maternal vaccine confers protection to those who received maternal vaccine
+        hospitalizations_unvax_sim[sim, age] <- (unvax_population*h_vec_sim[sim,age])
+        hospitalizations_vaxed_sim[sim, age] <- (vaxed_population*h_vec_sim[sim,age]*(1 - efficacy_mat[sim]))
+        hospitalizations_sim[sim, age] <- hospitalizations_unvax_sim[sim, age] + hospitalizations_vaxed_sim[sim, age]
+        
         unvax_deaths_due_to_gnr_sim[sim, age] <- (hospitalizations_unvax_sim[sim, age]*mu_gnr_sim[sim,age])
-        #unvax_deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_unvax_sim[sim, age], mu_gnr_sim[sim,age])
         vaxed_deaths_due_to_gnr_sim[sim, age] <- (hospitalizations_vaxed_sim[sim, age]*mu_gnr_sim[sim,age])
-        #vaxed_deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_vaxed_sim[sim, age], mu_gnr_sim[sim,age])
-        total_deaths_due_to_gnr_sim[sim, age] <- unvax_deaths_due_to_gnr_sim[sim, age] + vaxed_deaths_due_to_gnr_sim[sim, age]
+        deaths_due_to_gnr_sim[sim, age] <- unvax_deaths_due_to_gnr_sim[sim, age] + vaxed_deaths_due_to_gnr_sim[sim, age]
         unvax_other_cause_deaths_sim[sim, age] <- (unvax_population*mu_ac[age]) - unvax_deaths_due_to_gnr_sim[sim, age]
         vaxed_other_cause_deaths_sim[sim, age] <- (vaxed_population*mu_ac[age]) - vaxed_deaths_due_to_gnr_sim[sim, age]
-        #unvax_other_cause_deaths_sim[sim, age] <- rbinom(1, unvax_population, mu_ac[age]) - unvax_deaths_due_to_gnr_sim[sim, age]
-        #vaxed_other_cause_deaths_sim[sim, age] <- rbinom(1, vaxed_population, mu_ac[age]) - vaxed_deaths_due_to_gnr_sim[sim, age]
-        total_other_cause_deaths_sim[sim, age] <- unvax_other_cause_deaths_sim[sim, age] + vaxed_other_cause_deaths_sim[sim, age]
+        other_cause_deaths_sim[sim, age] <- unvax_other_cause_deaths_sim[sim, age] + vaxed_other_cause_deaths_sim[sim, age]
         
         # Calculates the number of survivors
-        survived_sim[sim, age] <- remaining_cohort - total_deaths_due_to_gnr_sim[sim, age] - total_other_cause_deaths_sim[sim, age]
+        survived_sim[sim, age] <- remaining_cohort - deaths_due_to_gnr_sim[sim, age] - other_cause_deaths_sim[sim, age]
         survived_vaxed_sim[sim, age] <- vaxed_population - vaxed_deaths_due_to_gnr_sim[sim, age] - vaxed_other_cause_deaths_sim[sim, age]
         survived_unvax_sim[sim, age] <- unvax_population - unvax_deaths_due_to_gnr_sim[sim, age] - unvax_other_cause_deaths_sim[sim, age]
-        total_deaths_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] + total_other_cause_deaths_sim[sim, age]
-        
-        #Calculates DALYs
-        daly_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] * remaining_years[age]
-        daly_discounted_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] * discounted_remaining_years[age]
+        total_deaths_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] + other_cause_deaths_sim[sim, age]
+        daly_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] * remaining_years[age]
+        daly_discounted_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] * discounted_remaining_years[age]
         
         # Update the remaining cohort for the next period
         remaining_cohort <- survived_sim[sim, age]
-        vaxed_population <- remaining_cohort*v1
-        unvax_population <- remaining_cohort*(1-v1)
+        vaxed_population <- remaining_cohort * coverage_epi
+        unvax_population <- remaining_cohort * (1-coverage_epi)
         
       } else {
-        #h_vec_sim[sim, age] <- rbeta(1, h_vec[age], h_n[age]-h_vec[age]) #For each age group, estimates a hospitalization probability based on the mean and standard deviation and 1 trial
+        
         hospitalizations_unvax_sim[sim, age] <- unvax_population*h_vec_sim[sim,age] #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
         hospitalizations_vaxed_sim[sim, age] <- vaxed_population*h_vec_sim[sim,age]*(1 - efficacy_epi[sim])
-        #hospitalizations_unvax_sim[sim, age] <- rbinom(1, unvax_population, h_vec_sim[sim,age]) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
-        #hospitalizations_vaxed_sim[sim, age] <- rbinom(1, vaxed_population, h_vec_sim[sim,age]*(1 - efficacy_epi[sim])) #for each age group, estimates number of hospitalized babies based on h_vec_sim and binomial distribution
-        hospitalizations_total_sim[sim, age] <- hospitalizations_unvax_sim[sim, age] + hospitalizations_vaxed_sim[sim, age]
+        hospitalizations_sim[sim, age] <- hospitalizations_unvax_sim[sim, age] + hospitalizations_vaxed_sim[sim, age]
         
-        #mu_gnr_sim[sim, age] <- rbeta(1, mu_gnr_vec[age], mu_gnr_n[age] - mu_gnr_vec[age])
         unvax_deaths_due_to_gnr_sim[sim, age] <- hospitalizations_unvax_sim[sim, age]*mu_gnr_sim[sim,age]
         vaxed_deaths_due_to_gnr_sim[sim, age] <- hospitalizations_vaxed_sim[sim, age]*mu_gnr_sim[sim,age]
-        #unvax_deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_unvax_sim[sim, age], mu_gnr_sim[sim,age])
-        #vaxed_deaths_due_to_gnr_sim[sim, age] <- rbinom(1, hospitalizations_vaxed_sim[sim, age], mu_gnr_sim[sim,age])
-        total_deaths_due_to_gnr_sim[sim, age] <- unvax_deaths_due_to_gnr_sim[sim, age] + vaxed_deaths_due_to_gnr_sim[sim, age]
+        deaths_due_to_gnr_sim[sim, age] <- unvax_deaths_due_to_gnr_sim[sim, age] + vaxed_deaths_due_to_gnr_sim[sim, age]
         unvax_other_cause_deaths_sim[sim, age] <- unvax_population*mu_ac[age] - unvax_deaths_due_to_gnr_sim[sim, age]
         vaxed_other_cause_deaths_sim[sim, age] <- vaxed_population*mu_ac[age] - vaxed_deaths_due_to_gnr_sim[sim, age]
-        #unvax_other_cause_deaths_sim[sim, age] <- rbinom(1, unvax_population, mu_ac[age]) - unvax_deaths_due_to_gnr_sim[sim, age]
-        #vaxed_other_cause_deaths_sim[sim, age] <- rbinom(1, vaxed_population, mu_ac[age]) - vaxed_deaths_due_to_gnr_sim[sim, age]
-        total_other_cause_deaths_sim[sim, age] <- unvax_other_cause_deaths_sim[sim, age] + vaxed_other_cause_deaths_sim[sim, age]
+        other_cause_deaths_sim[sim, age] <- unvax_other_cause_deaths_sim[sim, age] + vaxed_other_cause_deaths_sim[sim, age]
         
         # Calculates the number of survivors
         survived_unvax_sim[sim, age] <- unvax_population - unvax_deaths_due_to_gnr_sim[sim, age] - unvax_other_cause_deaths_sim[sim, age]
         survived_vaxed_sim[sim, age] <- vaxed_population - vaxed_deaths_due_to_gnr_sim[sim, age] - vaxed_other_cause_deaths_sim[sim, age]
         survived_sim[sim, age] <- survived_unvax_sim[sim, age] + survived_vaxed_sim[sim, age]
-        total_deaths_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] + total_other_cause_deaths_sim[sim, age]
-        
-        #Calculates DALYs
-        daly_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] * remaining_years[age]
-        daly_discounted_sim[sim, age] <- total_deaths_due_to_gnr_sim[sim, age] * discounted_remaining_years[age]
+        total_deaths_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] + other_cause_deaths_sim[sim, age]
+        daly_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] * remaining_years[age]
+        daly_discounted_sim[sim, age] <- deaths_due_to_gnr_sim[sim, age] * discounted_remaining_years[age]
         
         # Update the remaining cohort for the next period
         unvax_population <- survived_unvax_sim[sim, age]
         vaxed_population <- survived_vaxed_sim[sim, age]
+        
       }
     }
   }
   
-  
   # Summarizes the results with confidence intervals
-  # First adds the total hospitalizations and deaths for each simulation
-  hospitalizations_sim <- rowSums(hospitalizations_total_sim)
-  deaths_due_to_gnr_sim <- rowSums(total_deaths_due_to_gnr_sim)
-  other_cause_deaths_sim <- rowSums(total_other_cause_deaths_sim)
-  all_cause_deaths_sim <- rowSums(total_deaths_sim)
-  expected_hospitalizations <- mean(hospitalizations_sim)
-  expected_hospitalizations_age1 <- mean(hospitalizations_total_sim[ ,1])
-  expected_hospitalizations_age2 <- mean(hospitalizations_total_sim[ ,2])
-  expected_hospitalizations_age3 <- mean(hospitalizations_total_sim[ ,3])
-  expected_hospitalizations_age4 <- mean(hospitalizations_total_sim[ ,4])
-  std_dev_hospitalizations <- sd(hospitalizations_sim)
-  expected_gnr_deaths <- mean(deaths_due_to_gnr_sim)
-  expected_gnr_deaths_age1 <- mean(total_deaths_due_to_gnr_sim[ ,1])
-  expected_gnr_deaths_age2 <- mean(total_deaths_due_to_gnr_sim[ ,2])
-  expected_gnr_deaths_age3 <- mean(total_deaths_due_to_gnr_sim[ ,3])
-  expected_gnr_deaths_age4 <- mean(total_deaths_due_to_gnr_sim[ ,4])
-  daly_disc_age1 <- mean(daly_discounted_sim[ ,1])
-  daly_disc_age2 <- mean(daly_discounted_sim[ ,2])
-  daly_disc_age3 <- mean(daly_discounted_sim[ ,3])
-  daly_disc_age4 <- mean(daly_discounted_sim[ ,4])
-  daly_age1 <- mean(daly_sim[ ,1])
-  daly_age2 <- mean(daly_sim[ ,2])
-  daly_age3 <- mean(daly_sim[ ,3])
-  daly_age4 <- mean(daly_sim[ ,4])
-  total_daly_sim <- rowSums(daly_sim)
-  total_daly_discounted_sim <- rowSums(daly_discounted_sim)
-  expected_daly_disc <- mean(total_daly_discounted_sim)
-  expected_daly <- mean(total_daly_sim)
+# Add the total hospitalizations, deaths, and DALYs for each simulation
+total_hospitalizations_sim <- rowSums(hospitalizations_sim)
+total_deaths_due_to_gnr_sim <- rowSums(deaths_due_to_gnr_sim)
+total_other_cause_deaths_sim <- rowSums(other_cause_deaths_sim)
+total_all_cause_deaths_sim <- rowSums(total_deaths_sim)
+total_daly_sim <- rowSums(daly_sim)
+total_daly_discounted_sim <- rowSums(daly_discounted_sim)
+
+#Expected hospitalizations, overall and by age group
+expected_hospitalizations <- mean(total_hospitalizations_sim)
+expected_hospitalizations_age1 <- mean(hospitalizations_sim[ ,1])
+expected_hospitalizations_age2 <- mean(hospitalizations_sim[ ,2])
+expected_hospitalizations_age3 <- mean(hospitalizations_sim[ ,3])
+expected_hospitalizations_age4 <- mean(hospitalizations_sim[ ,4])
+
+#Expected gnr deaths, overall and by age group
+expected_gnr_deaths <- mean(total_deaths_due_to_gnr_sim)
+expected_gnr_deaths_age1 <- mean(deaths_due_to_gnr_sim[ ,1])
+expected_gnr_deaths_age2 <- mean(deaths_due_to_gnr_sim[ ,2])
+expected_gnr_deaths_age3 <- mean(deaths_due_to_gnr_sim[ ,3])
+expected_gnr_deaths_age4 <- mean(deaths_due_to_gnr_sim[ ,4])
+
+#Expected DALYs, overall and by age group
+expected_daly <- mean(total_daly_sim)
+daly_age1 <- mean(daly_sim[ ,1])
+daly_age2 <- mean(daly_sim[ ,2])
+daly_age3 <- mean(daly_sim[ ,3])
+daly_age4 <- mean(daly_sim[ ,4])
+expected_daly_disc <- mean(total_daly_discounted_sim)
+daly_disc_age1 <- mean(daly_discounted_sim[ ,1])
+daly_disc_age2 <- mean(daly_discounted_sim[ ,2])
+daly_disc_age3 <- mean(daly_discounted_sim[ ,3])
+daly_disc_age4 <- mean(daly_discounted_sim[ ,4])
+
+#Confidence Intervals
+total_hospitalizations_ci <- ci(total_hospitalizations_sim)
+total_gnr_deaths_ci <- ci(total_deaths_due_to_gnr_sim)
+total_daly_ci <- ci(total_daly_sim)
+total_daly_discounted_ci <- ci(total_daly_discounted_sim)
+hosp_age1_ci <- ci(hospitalizations_sim[ ,1])
+hosp_age2_ci <- ci(hospitalizations_sim[ ,2])
+hosp_age3_ci <- ci(hospitalizations_sim[ ,3])
+hosp_age4_ci <- ci(hospitalizations_sim[ ,4])
+gnrdeaths_age1_ci <- ci(deaths_due_to_gnr_sim[ ,1])
+gnrdeaths_age2_ci <- ci(deaths_due_to_gnr_sim[ ,2])
+gnrdeaths_age3_ci <- ci(deaths_due_to_gnr_sim[ ,3])
+gnrdeaths_age4_ci <- ci(deaths_due_to_gnr_sim[ ,4])
+daly_age1_ci <- ci(daly_sim[ ,1])
+daly_age2_ci <- ci(daly_sim[ ,2])
+daly_age3_ci <- ci(daly_sim[ ,3])
+daly_age4_ci <- ci(daly_sim[ ,4])
+daly_disc_age1_ci <- ci(daly_discounted_sim[ ,1])
+daly_disc_age2_ci <- ci(daly_discounted_sim[ ,2])
+daly_disc_age3_ci <- ci(daly_discounted_sim[ ,3])
+daly_disc_age4_ci <- ci(daly_discounted_sim[ ,4])
+
+hosps_deaths_dalys <- cbind(total_hospitalizations_sim, total_deaths_due_to_gnr_sim, total_daly_sim, total_daly_discounted_sim)
   
-  total_hospitalizations_ci <- ci(hospitalizations_sim)
-  total_gnr_deaths_ci <- ci(deaths_due_to_gnr_sim)
-  total_daly_ci <- ci(total_daly_sim)
-  total_daly_discounted_ci <- ci(total_daly_discounted_sim)
-  hosp_age1_ci <- ci(hospitalizations_total_sim[ ,1])
-  hosp_age2_ci <- ci(hospitalizations_total_sim[ ,2])
-  hosp_age3_ci <- ci(hospitalizations_total_sim[ ,3])
-  hosp_age4_ci <- ci(hospitalizations_total_sim[ ,4])
-  gnrdeaths_age1_ci <- ci(total_deaths_due_to_gnr_sim[ ,1])
-  gnrdeaths_age2_ci <- ci(total_deaths_due_to_gnr_sim[ ,2])
-  gnrdeaths_age3_ci <- ci(total_deaths_due_to_gnr_sim[ ,3])
-  gnrdeaths_age4_ci <- ci(total_deaths_due_to_gnr_sim[ ,4])
-  daly_disc_age1_ci <- ci(daly_discounted_sim[ ,1])
-  daly_disc_age2_ci <- ci(daly_discounted_sim[ ,2])
-  daly_disc_age3_ci <- ci(daly_discounted_sim[ ,3])
-  daly_disc_age4_ci <- ci(daly_discounted_sim[ ,4])
-  daly_age1_ci <- ci(daly_sim[ ,1])
-  daly_age2_ci <- ci(daly_sim[ ,2])
-  daly_age3_ci <- ci(daly_sim[ ,3])
-  daly_age4_ci <- ci(daly_sim[ ,4])
-  
-  hosps_deaths_dalys <- cbind(hospitalizations_sim, deaths_due_to_gnr_sim, total_daly_sim, total_daly_discounted_sim)
-  
-  joint_hosp_cost <- hospitalizations_sim*157.50
-  joint_cost_per_dose <- 1
-  joint_doses_admin <- birth_cohort*vm + birth_cohort*(1-mu_ac[1])*v1*3 #epi coverage applied to those who survive period 1
-  joint_dose_cost <- joint_cost_per_dose*joint_doses_admin
-  joint_total_cost <- joint_hosp_cost + joint_dose_cost
-  incr_cost_joint_sq <- joint_total_cost - sq_hosp_cost
-  incr_cost_joint_mat <- joint_total_cost - mat_total_cost
-  daly_avert_joint_sq <- sq_daly_undisc - total_daly_sim
-  daly_avert_joint_mat <- mat_daly_undisc - total_daly_sim
-  icer_joint_sq <- incr_cost_joint_sq / daly_avert_joint_sq
-  icer_joint_mat <- incr_cost_joint_mat / daly_avert_joint_mat
-  
-  #Comparing Joint to Status Quo
-  expected_daly_avert_joint_sq <- mean(daly_avert_joint_sq)
-  daly_avert_joint_sq_ci <- ci(daly_avert_joint_sq)
-  expected_icer_joint_sq <- median(icer_joint_sq)
-  icer_joint_sq_ci <- ci(icer_joint_sq)
-  #Comparing Joint to Maternal
-  expected_daly_avert_joint_mat <- mean(daly_avert_joint_mat)
-  daly_avert_joint_mat_ci <- ci(daly_avert_joint_mat)
-  expected_icer_joint_mat <- median(icer_joint_mat)
-  icer_joint_mat_ci <- ci(icer_joint_mat)
-  
-  # OUTPUT JOINT ICER DATA
-  return(data.frame(daly_avert_joint_sq = expected_daly_avert_joint_sq, daly_joint_sq_low = daly_avert_joint_sq_ci[1], daly_joint_sq_high = daly_avert_joint_sq_ci[2],
-  icer_joint_sq = expected_icer_joint_sq, icer_joint_sq_low = icer_joint_sq_ci[1], icer_joint_sq_high = icer_joint_sq_ci[2],
-  daly_avert_joint_mat = expected_daly_avert_joint_mat, daly_joint_mat_low = daly_avert_joint_mat_ci[1], daly_joint_mat_high = daly_avert_joint_mat_ci[2],
-  icer_joint_mat = expected_icer_joint_mat, icer_joint_mat_low = icer_joint_mat_ci[1], icer_joint_mat_high = icer_joint_mat_ci[2]))
-  
+joint_hosp_cost <- total_hospitalizations_sim*157.50
+mat_cost_per_dose <- 1.47
+mat_doses_admin <- birth_cohort*coverage_mat
+mat_dose_cost <- mat_cost_per_dose*mat_doses_admin
+epi_cost_per_dose <- 1.47
+epi_doses_per_child <- 3
+epi_doses_admin <- birth_cohort*(1-mu_ac[1])*coverage_epi*epi_doses_per_child #coverage applied to those who survive period 1
+epi_dose_cost <- epi_cost_per_dose*epi_doses_admin
+joint_dose_cost <- mat_dose_cost + epi_dose_cost
+joint_total_cost <- joint_hosp_cost + joint_dose_cost
+
+incr_cost_joint_sq <- joint_total_cost - sq_hosp_cost
+incr_cost_joint_mat <- joint_total_cost - mat_total_cost
+#daly_avert_joint_sq <- sq_daly_undisc - total_daly_sim
+daly_avert_joint_sq <- sq_daly_disc - total_daly_discounted_sim
+#daly_avert_joint_mat <- mat_daly_undisc - total_daly_sim
+daly_avert_joint_mat <- mat_daly_disc - total_daly_discounted_sim
+icer_joint_sq <- incr_cost_joint_sq / daly_avert_joint_sq
+icer_joint_mat <- incr_cost_joint_mat / daly_avert_joint_mat
+
+#Comparing Joint to Status Quo
+expected_daly_avert_joint_sq <- mean(daly_avert_joint_sq)
+daly_avert_joint_sq_ci <- ci(daly_avert_joint_sq)
+expected_icer_joint_sq <- mean(incr_cost_joint_sq)/expected_daly_avert_joint_sq
+icer_joint_sq_ci <- ci(icer_joint_sq)
+#Comparing Joint to Maternal
+expected_daly_avert_joint_mat <- mean(daly_avert_joint_mat)
+daly_avert_joint_mat_ci <- ci(daly_avert_joint_mat)
+expected_icer_joint_mat <- mean(incr_cost_joint_mat)/expected_daly_avert_joint_mat
+icer_joint_mat_ci <- ci(icer_joint_mat)
+
+icer_matrix_joint_sq <-cbind(incr_cost_joint_sq, daly_avert_joint_sq, icer_joint_sq)
+icer_matrix_joint_mat <- cbind(incr_cost_joint_mat, daly_avert_joint_mat, icer_joint_mat)
+ 
   #TO OUTPUT JOINT PRIMARY DATA
   # return(data.frame(expected_hosp = expected_hospitalizations, hosp_low_ci = total_hospitalizations_ci[1], hosp_high_ci = total_hospitalizations_ci[2],
   #                   hosp_age1 = expected_hospitalizations_age1, hosp_age1_low_ci = hosp_age1_ci[1], hosp_age1_high_ci = hosp_age1_ci[2],
@@ -240,16 +209,36 @@ simulate_epi_maternal <- function (birth_cohort, periods, h, mu_ac, mu_gnr, n_si
 
   #OUTPUT MATRIX OF HOSPITALIZATIONS, DEATHS, AND DALYS LOST
   #return(hosps_deaths_dalys)
+
+  # OUTPUT JOINT ICER DATA
+  return(data.frame(daly_avert_joint_sq = expected_daly_avert_joint_sq, daly_joint_sq_low = daly_avert_joint_sq_ci[1], daly_joint_sq_high = daly_avert_joint_sq_ci[2],
+                    icer_joint_sq = expected_icer_joint_sq, icer_joint_sq_low = icer_joint_sq_ci[1], icer_joint_sq_high = icer_joint_sq_ci[2],
+                    daly_avert_joint_mat = expected_daly_avert_joint_mat, daly_joint_mat_low = daly_avert_joint_mat_ci[1], daly_joint_mat_high = daly_avert_joint_mat_ci[2],
+                    icer_joint_mat = expected_icer_joint_mat, icer_joint_mat_low = icer_joint_mat_ci[1], icer_joint_mat_high = icer_joint_mat_ci[2]))
+
+  # OUTPUT ICER MATRIX - JOINT VS SQ
+  #return(icer_matrix_joint_sq)
+
+  # OUTPUT ICER MATRIX - JOINT VS MAT
+  #return(icer_matrix_joint_mat)
 }
+
 #TO OUTPUT JOINT PRIMARY DATA
-#joint_data_final <- simulate_epi_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, v1, efficacy_epi)
+#joint_data <- simulate_joint(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, coverage_epi, efficacy_mat, efficacy_epi)
 
 #TO OUTPUT MATRIX OF HOSPITALIZATIONS, DEATHS, AND DALYS LOST
-#joint_hosps_deaths_dalys <- simulate_epi_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, v1, efficacy_epi)
+#joint_hosps_deaths_dalys <- simulate_joint(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, coverage_epi, efficacy_mat, efficacy_epi)
 
 #TO OUTPUT ICER VARIABLES
-joint_icer <- simulate_epi_maternal(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, vm, efficacy_mat, v1, efficacy_epi)
+joint_icer_data <- simulate_joint(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, coverage_epi, efficacy_mat, efficacy_epi)
+
+#TO OUTPUT ICER MATRIX JOINT VS SQ
+#joint_sq_icer_matrix <- simulate_joint(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, coverage_epi, efficacy_mat, efficacy_epi)
+  
+#TO OUTPUT ICER MATRIX JOINT VS MAT
+#joint_mat_icer_matrix <- simulate_joint(birth_cohort, periods, h, mu_ac, mu_gnr, n_simulations, coverage_mat, coverage_epi, efficacy_mat, efficacy_epi)
+
 
 #EXPORT JOINT DATA
 #library("writexl")
-#write_xlsx(joint_data_final,"C:/Users/wstil/OneDrive/Desktop/Aim 3/Hosp Deaths DALY Figure/joint_output.xlsx", col_name=TRUE, format_headers=FALSE)
+#write_xlsx(joint_data,"C:/Users/wstil/OneDrive/Desktop/Aim 3/Hosp Deaths DALY Figure/joint_output.xlsx", col_name=TRUE, format_headers=FALSE)
